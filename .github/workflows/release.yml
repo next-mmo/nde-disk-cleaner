@@ -3,11 +3,11 @@ name: Release
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Release tag (e.g. v0.1.0)'
+        description: "Release tag (e.g. v0.1.0)"
         required: true
         type: string
 
@@ -20,17 +20,17 @@ jobs:
       matrix:
         include:
           - platform: macos-latest
-            args: '--target aarch64-apple-darwin'
-            name: 'macOS (Apple Silicon)'
+            args: "--target aarch64-apple-darwin"
+            name: "macOS (Apple Silicon)"
           - platform: macos-latest
-            args: '--target x86_64-apple-darwin'
-            name: 'macOS (Intel)'
+            args: "--target x86_64-apple-darwin"
+            name: "macOS (Intel)"
           - platform: ubuntu-22.04
-            args: ''
-            name: 'Linux (x86_64)'
+            args: ""
+            name: "Linux (x86_64)"
           - platform: windows-latest
-            args: ''
-            name: 'Windows (x86_64)'
+            args: ""
+            name: "Windows (x86_64)"
 
     runs-on: ${{ matrix.platform }}
     steps:
@@ -66,7 +66,7 @@ jobs:
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
-          workspaces: './src-tauri -> target'
+          workspaces: "./src-tauri -> target"
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -77,8 +77,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: 'pnpm'
+          node-version: 24
+          cache: "pnpm"
 
       - name: Install frontend dependencies
         run: pnpm install --frozen-lockfile
@@ -89,8 +89,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tagName: ${{ steps.tag.outputs.value }}
-          releaseName: 'NDE Disk Cleaner ${{ steps.tag.outputs.value }}'
-          releaseBody: 'See the assets to download and install this version.'
+          releaseName: "NDE Disk Cleaner ${{ steps.tag.outputs.value }}"
+          releaseBody: "See the assets to download and install this version."
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}
