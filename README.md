@@ -125,8 +125,16 @@ artifacts stay attached to the same draft release.
 
 ### Notes
 
-- Builds are **unsigned**. On first launch users will hit Gatekeeper
-  (macOS) or SmartScreen (Windows) and must explicitly allow the app.
+- Builds are **unsigned**. On first launch users will hit SmartScreen (Windows) and must explicitly allow the app. On **macOS**, because the app is unsigned and downloaded from the internet, Gatekeeper will flag it with a quarantine attribute. On Apple Silicon (M1/M2/M3), macOS will frequently say the app is "damaged and can't be opened".
+  **To fix the macOS "damaged" error:**
+  1. Drag `NDE Disk Cleaner.app` from the `.dmg` into your `/Applications` folder.
+  2. Open the `Terminal` app and run exactly:
+     ```sh
+     xattr -cr "/Applications/NDE Disk Cleaner.app"
+     ```
+  3. You can now open it normally.
+  
+  *(Note: The tiny file size of < 2MB is expected! This app uses your Mac's built-in WebKit engine natively via Tauri, avoiding the massive bloat of Electron.)*
 - To redo a tag, delete both the remote tag and the draft release first:
   `git push --delete origin v0.1.0 && git tag -d v0.1.0`.
 
