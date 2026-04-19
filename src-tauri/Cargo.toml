@@ -1,6 +1,6 @@
 [package]
 name = "nde-disk-cleaner"
-version = "0.1.0"
+version = "0.1.1"
 description = "nde-disk-cleaner — Rust + Tauri 2 + Svelte disk space analyzer"
 authors = ["you"]
 edition = "2021"
