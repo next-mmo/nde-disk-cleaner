@@ -1,7 +1,7 @@
 # NDE Disk Cleaner
 
 A cross-platform disk-space analyzer — deep clone of **Disk Space Analyzer: Inspector**
-(Nektony) built on **Rust + Tauri 2 + Svelte 5**. Native on macOS, Windows, and Linux.
+built on **Rust + Tauri 2 + Svelte 5**. Native on macOS, Windows, and Linux.
 No WSL, no Electron.
 
 ## Architecture
@@ -104,11 +104,11 @@ git push origin v0.1.0
 
 The workflow creates a **draft** release with all OS bundles attached:
 
-| Platform          | Artifacts                       |
-| ----------------- | ------------------------------- |
-| macOS (arm64/x64) | `.dmg`, `.app.tar.gz`           |
-| Windows           | `.msi`, `.exe` (NSIS)           |
-| Linux             | `.AppImage`, `.deb`, `.rpm`     |
+| Platform          | Artifacts                   |
+| ----------------- | --------------------------- |
+| macOS (arm64/x64) | `.dmg`, `.app.tar.gz`       |
+| Windows           | `.msi`, `.exe` (NSIS)       |
+| Linux             | `.AppImage`, `.deb`, `.rpm` |
 
 Once the matrix finishes (~15–25 min), open the repo's **Releases** page,
 review the draft, add notes, and click **Publish**.
@@ -132,5 +132,4 @@ artifacts stay attached to the same draft release.
 
 ## License
 
-MIT — for the scaffold code. Name and trade dress belong to Nektony LLC;
-this is an independently-written clone, not their code.
+MIT
