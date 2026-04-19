@@ -4,7 +4,6 @@ use serde::Serialize;
 /// Sent to frontend as JSON after scan completes.
 #[derive(Serialize, Clone, Debug)]
 pub struct FileNode {
-    pub id: String,
     pub name: String,
     pub path: String,
     pub size: u64,

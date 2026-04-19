@@ -32,11 +32,11 @@
       <span>Name</span>
       <span class="size">Size</span>
     </div>
-    {#each items as item (item.id)}
+    {#each items as item (item.path)}
       <button
         type="button"
         class="row"
-        class:active={selected?.id === item.id}
+        class:active={selected?.path === item.path}
         onclick={() => onselect(item)}
         ondblclick={() => onopen(item)}
       >

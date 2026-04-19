@@ -1,6 +1,5 @@
 use crate::tree::{FileNode, ScanProgress};
 use jwalk::{Parallelism, WalkDirGeneric};
-use parking_lot::Mutex;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
@@ -25,14 +24,22 @@ impl ScanHandle {
     }
 
     pub fn cancel(&self) {
-        self.cancelled.store(true, Ordering::SeqCst);
+        self.cancelled.store(true, Ordering::Relaxed);
     }
+}
+
+/// Per-entry stat snapshot, attached during jwalk's parallel readdir so we
+/// don't pay a second `stat()` syscall on the iterator thread.
+#[derive(Default, Clone, Debug)]
+struct EntryMeta {
+    size: u64,
+    modified: Option<u64>,
 }
 
 /// Raw entry collected during walk (flat).
 struct Entry {
     path: PathBuf,
-    parent: Option<PathBuf>,
+    parent: PathBuf,
     name: String,
     size: u64,
     is_dir: bool,
@@ -49,20 +56,50 @@ pub fn scan(
     show_hidden: bool,
     max_depth: u32,
 ) -> Result<FileNode, String> {
-    let root = root.canonicalize().map_err(|e| format!("cannot resolve path: {e}"))?;
+    let root = root
+        .canonicalize()
+        .map_err(|e| format!("cannot resolve path: {e}"))?;
     let cancelled = handle.cancelled.clone();
     let scanned_files = handle.scanned_files.clone();
     let scanned_bytes = handle.scanned_bytes.clone();
 
-    // Shared collector across rayon threads.
-    let entries: Arc<Mutex<Vec<Entry>>> = Arc::new(Mutex::new(Vec::with_capacity(4096)));
-    let last_emit: Arc<Mutex<Instant>> = Arc::new(Mutex::new(Instant::now()));
-    let current_path: Arc<Mutex<String>> = Arc::new(Mutex::new(String::new()));
-
-    let walker = WalkDirGeneric::<((), ())>::new(&root)
+    // Stat files inside jwalk's parallel pool during readdir. This moves the
+    // expensive metadata syscalls off the single-threaded iterator and onto
+    // every CPU — the dominant speedup for IO-bound scans.
+    let cancelled_for_walk = cancelled.clone();
+    let scanned_files_walk = scanned_files.clone();
+    let scanned_bytes_walk = scanned_bytes.clone();
+    let walker = WalkDirGeneric::<((), EntryMeta)>::new(&root)
         .parallelism(Parallelism::RayonNewPool(0)) // 0 = auto = all cores
         .skip_hidden(!show_hidden)
-        .follow_links(false);
+        .follow_links(false)
+        .process_read_dir(move |_depth, _path, _state, children| {
+            // Bail early if cancelled — avoids wasted stats on huge trees.
+            if cancelled_for_walk.load(Ordering::Relaxed) {
+                children.clear();
+                return;
+            }
+            for child in children.iter_mut().flatten() {
+                if !child.file_type.is_file() {
+                    continue;
+                }
+                if let Ok(md) = child.metadata() {
+                    let size = md.len();
+                    let modified = md
+                        .modified()
+                        .ok()
+                        .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
+                        .map(|d| d.as_secs());
+                    child.client_state = EntryMeta { size, modified };
+                    scanned_files_walk.fetch_add(1, Ordering::Relaxed);
+                    scanned_bytes_walk.fetch_add(size, Ordering::Relaxed);
+                }
+            }
+        });
+
+    // Iterator runs on this single thread; no mutex needed for collectors.
+    let mut entries: Vec<Entry> = Vec::with_capacity(8192);
+    let mut last_emit = Instant::now();
 
     for entry in walker {
         if cancelled.load(Ordering::Relaxed) {
@@ -74,41 +111,26 @@ pub fn scan(
         };
 
         let path = entry.path();
-        let is_dir = entry.file_type().is_dir();
-
-        // Skip the root itself — we'll synthesize it.
         if path == root {
-            continue;
+            continue; // root is synthesized below
         }
 
+        let is_dir = entry.file_type().is_dir();
         let (size, modified) = if is_dir {
             (0u64, None)
         } else {
-            let md = match entry.metadata() {
-                Ok(m) => m,
-                Err(_) => continue,
-            };
-            let size = md.len();
-            let modified = md
-                .modified()
-                .ok()
-                .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
-                .map(|d| d.as_secs());
-
-            scanned_files.fetch_add(1, Ordering::Relaxed);
-            scanned_bytes.fetch_add(size, Ordering::Relaxed);
-            (size, modified)
+            // Already statted in the parallel pool above.
+            (entry.client_state.size, entry.client_state.modified)
         };
 
-        let name = path
-            .file_name()
-            .map(|s| s.to_string_lossy().into_owned())
-            .unwrap_or_default();
+        let name = entry.file_name().to_string_lossy().into_owned();
+        let parent = path
+            .parent()
+            .map(|p| p.to_path_buf())
+            .unwrap_or_else(|| root.clone());
 
-        let parent = path.parent().map(|p| p.to_path_buf());
-
-        entries.lock().push(Entry {
-            path: path.clone(),
+        entries.push(Entry {
+            path,
             parent,
             name,
             size,
@@ -118,23 +140,17 @@ pub fn scan(
 
         // Throttle progress emits to ~5/sec.
         let now = Instant::now();
-        let should_emit = {
-            let mut last = last_emit.lock();
-            if now.duration_since(*last).as_millis() >= 200 {
-                *last = now;
-                true
-            } else {
-                false
-            }
-        };
-        if should_emit {
-            *current_path.lock() = path.to_string_lossy().into_owned();
+        if now.duration_since(last_emit).as_millis() >= 200 {
+            last_emit = now;
             let _ = app.emit(
                 "scan:progress",
                 ScanProgress {
                     scanned_files: scanned_files.load(Ordering::Relaxed),
                     scanned_bytes: scanned_bytes.load(Ordering::Relaxed),
-                    current_path: current_path.lock().clone(),
+                    current_path: entries
+                        .last()
+                        .map(|e| e.path.to_string_lossy().into_owned())
+                        .unwrap_or_default(),
                 },
             );
         }
@@ -144,22 +160,16 @@ pub fn scan(
         return Err("cancelled".into());
     }
 
-    let flat = Arc::try_unwrap(entries)
-        .map_err(|_| "entries still referenced".to_string())?
-        .into_inner();
-
-    // Build tree from flat entries.
-    let tree = build_tree(&root, flat, max_depth);
-    Ok(tree)
+    Ok(build_tree(&root, entries, max_depth))
 }
 
 /// Build a nested FileNode tree from the flat entries, summing sizes up.
 fn build_tree(root: &Path, entries: Vec<Entry>, max_depth: u32) -> FileNode {
-    // Group by parent path.
-    let mut by_parent: HashMap<PathBuf, Vec<Entry>> = HashMap::new();
+    // Group by parent path. Pre-size based on rough dir density.
+    let mut by_parent: HashMap<PathBuf, Vec<Entry>> =
+        HashMap::with_capacity(entries.len() / 16 + 16);
     for e in entries {
-        let parent = e.parent.clone().unwrap_or_else(|| root.to_path_buf());
-        by_parent.entry(parent).or_default().push(e);
+        by_parent.entry(e.parent.clone()).or_default().push(e);
     }
 
     let root_name = root
@@ -187,7 +197,6 @@ fn build_node(
     };
 
     let mut node = FileNode {
-        id: format!("{depth}:{}", path.to_string_lossy()),
         name: name.to_string(),
         path: path.to_string_lossy().into_owned(),
         size: own_size,
@@ -222,7 +231,7 @@ fn build_node(
         .collect();
 
     // Sort biggest first.
-    children.sort_by(|a, b| b.size.cmp(&a.size));
+    children.sort_unstable_by(|a, b| b.size.cmp(&a.size));
 
     for c in &children {
         node.size += c.size;

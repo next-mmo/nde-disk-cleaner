@@ -2,7 +2,6 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 
 export interface FileNode {
-  id: string;
   name: string;
   path: string;
   size: number;
@@ -49,6 +48,10 @@ export function cancelScan(): Promise<void> {
 
 export function trashPath(path: string): Promise<void> {
   return invoke("trash_path", { path });
+}
+
+export function isPathProtected(path: string): Promise<string | null> {
+  return invoke("is_path_protected", { path });
 }
 
 export function homeDir(): Promise<string | null> {

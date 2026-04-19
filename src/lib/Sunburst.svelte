@@ -196,7 +196,7 @@
       </filter>
     </defs>
 
-    {#each arcs as arc (arc.node.id)}
+    {#each arcs as arc (arc.node.path + ":" + arc.depth)}
       <path
         d={arc.path}
         fill={arc.color}
@@ -216,7 +216,7 @@
       </path>
     {/each}
 
-    {#each arcs as arc (arc.node.id + ":label")}
+    {#each arcs as arc (arc.node.path + ":" + arc.depth + ":label")}
       {@const label = labelFor(arc)}
       {#if label}
         <text

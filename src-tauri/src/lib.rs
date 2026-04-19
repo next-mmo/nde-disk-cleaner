@@ -15,6 +15,7 @@ pub fn run() {
             commands::start_scan,
             commands::cancel_scan,
             commands::trash_path,
+            commands::is_path_protected,
             commands::home_dir,
         ])
         .run(tauri::generate_context!())

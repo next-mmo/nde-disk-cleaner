@@ -94,50 +94,55 @@ pub fn cancel_scan(state: State<'_, AppState>) {
 #[tauri::command]
 pub fn trash_path(path: String) -> Result<(), String> {
     let target = PathBuf::from(&path);
-    if is_protected_system_path(&target) {
+    if let Some(reason) = protected_reason(&target) {
         return Err(format!(
-            "Refusing to delete protected system path: {}. Removing it could prevent the OS from booting.",
-            target.display()
+            "Refusing to delete {}: {}",
+            target.display(),
+            reason
         ));
     }
     trash::delete(&target).map_err(|e| e.to_string())
 }
 
-/// Returns true if `path` is — or lives inside — a directory critical to the OS,
-/// or if it *is* a disk mount point. Deleting any of these can leave the machine
-/// unbootable or destroy an entire volume, so we hard-block the trash command.
-fn is_protected_system_path(path: &std::path::Path) -> bool {
+#[tauri::command]
+pub fn is_path_protected(path: String) -> Option<String> {
+    protected_reason(&PathBuf::from(&path))
+}
+
+/// Returns `Some(reason)` when deleting `path` would endanger the OS, destroy
+/// a whole volume, or wipe every user's home. Reason is shown in the UI so the
+/// user understands why the action is blocked.
+fn protected_reason(path: &std::path::Path) -> Option<String> {
     // Canonicalize when possible so callers can't bypass the check with `.`,
     // `..`, or symlinks. Fall back to the raw path on failure (broken symlink,
     // missing file) — better to over-refuse than under-refuse.
     let canon = std::fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf());
 
-    // Filesystem root itself is always protected.
     if canon.as_os_str().is_empty() || canon.parent().is_none() {
-        return true;
+        return Some("this is the filesystem root".into());
     }
 
     // Block deleting a mount point itself (e.g. `/`, `/Volumes/USB`, `C:\`).
     // Trashing a mount root tries to remove an entire volume from under the OS.
     for disk in Disks::new_with_refreshed_list().iter() {
-        let mount = disk.mount_point();
-        if canon == mount {
-            return true;
+        if canon == disk.mount_point() {
+            return Some("this is a disk mount point — trashing it would remove the whole volume".into());
         }
     }
 
+    // Recursive: deleting the dir *or anything inside it* can brick the OS.
     #[cfg(target_os = "macos")]
-    let roots: &[&str] = &[
+    let recursive: &[&str] = &[
         "/System", "/Library", "/bin", "/sbin", "/usr", "/private",
         "/etc", "/var", "/Applications", "/cores", "/opt", "/Volumes",
     ];
     #[cfg(target_os = "linux")]
-    let roots: &[&str] = &[
+    let recursive: &[&str] = &[
         "/bin", "/sbin", "/boot", "/dev", "/etc", "/lib", "/lib32", "/lib64",
         "/libx32", "/proc", "/root", "/run", "/srv", "/sys", "/usr", "/var",
     ];
     #[cfg(target_os = "windows")]
-    let roots: &[&str] = &[
+    let recursive: &[&str] = &[
         r"C:\Windows",
         r"C:\Program Files",
         r"C:\Program Files (x86)",
@@ -148,21 +153,55 @@ fn is_protected_system_path(path: &std::path::Path) -> bool {
         r"C:\Boot",
     ];
 
-    for root in roots {
+    // Exact-only: only the directory itself is protected, not its contents.
+    // `/Users` holds every user's home — deleting it destroys all user data,
+    // but a subfolder like `/Users/alice/Downloads` is fine to trash.
+    #[cfg(target_os = "macos")]
+    let exact: &[&str] = &["/Users", "/home"];
+    #[cfg(target_os = "linux")]
+    let exact: &[&str] = &["/home"];
+    #[cfg(target_os = "windows")]
+    let exact: &[&str] = &[r"C:\Users"];
+
+    for root in recursive {
         let root_path = std::path::Path::new(root);
-        if canon == root_path || canon.starts_with(root_path) {
+        if path_matches(&canon, root_path, true) {
+            return Some(format!(
+                "{} is a system directory; removing it can prevent the OS from booting",
+                root
+            ));
+        }
+    }
+
+    for root in exact {
+        let root_path = std::path::Path::new(root);
+        if path_matches(&canon, root_path, false) {
+            return Some(format!(
+                "{} contains every user's home folder — deleting it would destroy all user data",
+                root
+            ));
+        }
+    }
+
+    None
+}
+
+fn path_matches(canon: &std::path::Path, root: &std::path::Path, recursive: bool) -> bool {
+    if canon == root {
+        return true;
+    }
+    if recursive && canon.starts_with(root) {
+        return true;
+    }
+    #[cfg(target_os = "windows")]
+    {
+        let canon_lower = canon.to_string_lossy().to_ascii_lowercase();
+        let root_lower = root.to_string_lossy().to_ascii_lowercase();
+        if canon_lower == root_lower {
             return true;
         }
-        // Windows paths are case-insensitive; compare lowercased forms too.
-        #[cfg(target_os = "windows")]
-        {
-            let canon_lower = canon.to_string_lossy().to_ascii_lowercase();
-            let root_lower = root.to_ascii_lowercase();
-            if canon_lower == root_lower
-                || canon_lower.starts_with(&format!("{}\\", root_lower))
-            {
-                return true;
-            }
+        if recursive && canon_lower.starts_with(&format!("{}\\", root_lower)) {
+            return true;
         }
     }
     false

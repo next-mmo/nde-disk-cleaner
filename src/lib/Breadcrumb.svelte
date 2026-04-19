@@ -10,7 +10,7 @@
 </script>
 
 <nav class="crumbs" aria-label="Folder path">
-  {#each path as node, i (node.id)}
+  {#each path as node, i (node.path)}
     {#if i > 0}
       <span class="sep">›</span>
     {/if}
