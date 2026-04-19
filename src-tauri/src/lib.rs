@@ -15,8 +15,10 @@ pub fn run() {
             commands::start_scan,
             commands::cancel_scan,
             commands::trash_path,
+            commands::permanent_delete,
             commands::is_path_protected,
             commands::home_dir,
+            commands::check_for_updates,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

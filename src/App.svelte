@@ -8,6 +8,7 @@
     onScanProgress,
     startScan,
     trashPath,
+    permanentDelete,
     isPathProtected,
     type FileNode,
   } from "./lib/ipc";
@@ -23,6 +24,7 @@
   import Breadcrumb from "./lib/Breadcrumb.svelte";
   import ScanProgress from "./lib/ScanProgress.svelte";
   import FileDetails from "./lib/FileDetails.svelte";
+  import Settings from "./lib/Settings.svelte";
 
   let unlistenProgress: (() => void) | null = null;
   let elapsedTimer: number | null = null;
@@ -30,6 +32,8 @@
   let hovering = $state<FileNode | null>(null);
   let activeScanPath = $state<string | null>(null);
   let protectedReason = $state<string | null>(null);
+  let settingsOpen = $state(false);
+  let allowPermanentDelete = $state(false);
 
   // Display node = hovered preview, else currently-zoomed node.
   let displayedDetail = $derived(hovering ?? appState.selected ?? appState.zoomed);
@@ -142,18 +146,32 @@
   }
 
   async function trashNode(node: FileNode) {
-    const ok = confirm(
-      `Move to Trash?\n\n${node.path}\n\n${
-        node.is_dir ? "This will move the entire folder." : ""
-      }`,
-    );
-    if (!ok) return;
-    try {
-      await trashPath(node.path);
-      // Re-scan current root to refresh the tree.
-      if (activeScanPath) await doScan(activeScanPath);
-    } catch (e: any) {
-      alert("Failed: " + e);
+    if (allowPermanentDelete) {
+      const ok = confirm(
+        `⚠️ PERMANENTLY DELETE?\n\nThis CANNOT be undone!\n\n${node.path}\n\n${
+          node.is_dir ? "This will recursively delete the entire folder and all its contents." : ""
+        }`,
+      );
+      if (!ok) return;
+      try {
+        await permanentDelete(node.path);
+        if (activeScanPath) await doScan(activeScanPath);
+      } catch (e: any) {
+        alert("Permanent delete failed: " + e);
+      }
+    } else {
+      const ok = confirm(
+        `Move to Trash?\n\n${node.path}\n\n${
+          node.is_dir ? "This will move the entire folder." : ""
+        }`,
+      );
+      if (!ok) return;
+      try {
+        await trashPath(node.path);
+        if (activeScanPath) await doScan(activeScanPath);
+      } catch (e: any) {
+        alert("Failed: " + e);
+      }
     }
   }
 
@@ -204,6 +222,12 @@
         {#if activeScanPath && appState.status !== "scanning" && appState.status !== "idle"}
           <button onclick={() => doScan(activeScanPath!)}>Rescan</button>
         {/if}
+        <button class="gear-btn" onclick={() => (settingsOpen = true)} title="Settings" aria-label="Open Settings">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M6.5.5h3l.4 2 1.3.6 1.7-1.1 2.1 2.1-1.1 1.7.6 1.3 2 .4v3l-2 .4-0.6 1.3 1.1 1.7-2.1 2.1-1.7-1.1-1.3.6-.4 2h-3l-.4-2-1.3-.6-1.7 1.1L1 13.4l1.1-1.7-.6-1.3-2-.4v-3l2-.4.6-1.3L1 3.6 3.1 1.5l1.7 1.1 1.3-.6.4-2z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
+            <circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.2"/>
+          </svg>
+        </button>
       </div>
     </header>
 
@@ -269,12 +293,20 @@
     <FileDetails
       node={displayedDetail}
       protectedReason={protectedReason}
+      {allowPermanentDelete}
       onreveal={revealNode}
       onopen={openNode}
       ontrash={trashNode}
     />
   </main>
 </div>
+
+<Settings
+  open={settingsOpen}
+  {allowPermanentDelete}
+  onclose={() => (settingsOpen = false)}
+  ontogglePermanent={(v) => (allowPermanentDelete = v)}
+/>
 
 <style>
   .app {
@@ -380,5 +412,25 @@
     display: flex;
     gap: 6px;
     align-items: center;
+  }
+  .gear-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border-radius: 8px;
+    color: var(--fg-dim);
+    background: transparent;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: background 80ms, color 80ms, border-color 80ms, transform 200ms;
+  }
+  .gear-btn:hover {
+    background: var(--bg-panel);
+    color: var(--fg);
+    border-color: var(--border);
+    transform: rotate(30deg);
   }
 </style>

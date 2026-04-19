@@ -5,11 +5,12 @@
   interface Props {
     node: FileNode | null;
     protectedReason: string | null;
+    allowPermanentDelete: boolean;
     onreveal: (node: FileNode) => void;
     ontrash: (node: FileNode) => void;
     onopen: (node: FileNode) => void;
   }
-  let { node, protectedReason, onreveal, ontrash, onopen }: Props = $props();
+  let { node, protectedReason, allowPermanentDelete, onreveal, ontrash, onopen }: Props = $props();
 </script>
 
 <div class="bar">
@@ -42,11 +43,12 @@
       <button
         type="button"
         class="danger"
+        class:permanent={allowPermanentDelete}
         disabled={!!protectedReason}
-        title={protectedReason ?? "Move this item to the Trash"}
+        title={protectedReason ?? (allowPermanentDelete ? "Permanently delete this item (cannot be undone!)" : "Move this item to the Trash")}
         onclick={() => ontrash(node)}
       >
-        Move to Trash
+        {allowPermanentDelete ? "⚠ Delete Forever" : "Move to Trash"}
       </button>
     </div>
   {/if}
@@ -120,6 +122,20 @@
     color: var(--fg-muted);
     cursor: not-allowed;
     opacity: 0.55;
+  }
+  .danger.permanent {
+    background: rgba(255, 80, 80, 0.15);
+    border-color: rgba(255, 80, 80, 0.4);
+    font-weight: 600;
+    animation: pulse-danger 1.5s ease-in-out infinite;
+  }
+  .danger.permanent:hover:not(:disabled) {
+    background: rgba(255, 80, 80, 0.25);
+    border-color: var(--accent-hot);
+  }
+  @keyframes pulse-danger {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(255, 80, 80, 0); }
+    50% { box-shadow: 0 0 8px 2px rgba(255, 80, 80, 0.15); }
   }
   .protected {
     margin-top: 4px;

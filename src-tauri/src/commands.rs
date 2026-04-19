@@ -1,6 +1,7 @@
 use crate::scanner::{self, ScanHandle};
 use crate::tree::{FileNode, Volume};
 use parking_lot::Mutex;
+use serde::Serialize;
 use std::path::PathBuf;
 use std::sync::Arc;
 use sysinfo::Disks;
@@ -102,6 +103,25 @@ pub fn trash_path(path: String) -> Result<(), String> {
         ));
     }
     trash::delete(&target).map_err(|e| e.to_string())
+}
+
+/// Permanently delete a file or directory (bypasses Trash).
+/// Still refuses to touch protected paths.
+#[tauri::command]
+pub fn permanent_delete(path: String) -> Result<(), String> {
+    let target = PathBuf::from(&path);
+    if let Some(reason) = protected_reason(&target) {
+        return Err(format!(
+            "Refusing to delete {}: {}",
+            target.display(),
+            reason
+        ));
+    }
+    if target.is_dir() {
+        std::fs::remove_dir_all(&target).map_err(|e| e.to_string())
+    } else {
+        std::fs::remove_file(&target).map_err(|e| e.to_string())
+    }
 }
 
 #[tauri::command]
@@ -212,4 +232,86 @@ pub fn home_dir() -> Option<String> {
     std::env::var("HOME")
         .ok()
         .or_else(|| std::env::var("USERPROFILE").ok())
+}
+
+// ── Check for updates ──────────────────────────────────────────────
+
+#[derive(Serialize)]
+pub struct UpdateInfo {
+    pub current_version: String,
+    pub latest_version: String,
+    pub has_update: bool,
+    pub release_url: String,
+    pub release_notes: String,
+}
+
+#[tauri::command]
+pub async fn check_for_updates(app: tauri::AppHandle) -> Result<UpdateInfo, String> {
+    let current = app
+        .config()
+        .version
+        .clone()
+        .unwrap_or_else(|| "0.0.0".into());
+
+    let client = reqwest::Client::builder()
+        .user_agent("nde-disk-cleaner")
+        .build()
+        .map_err(|e| e.to_string())?;
+
+    let resp = client
+        .get("https://api.github.com/repos/next-mmo/nde-disk-cleaner/releases/latest")
+        .send()
+        .await
+        .map_err(|e| format!("Network error: {e}"))?;
+
+    if !resp.status().is_success() {
+        return Err(format!("GitHub API returned {}", resp.status()));
+    }
+
+    let body: serde_json::Value = resp.json().await.map_err(|e| e.to_string())?;
+
+    let tag = body["tag_name"]
+        .as_str()
+        .unwrap_or("0.0.0")
+        .trim_start_matches('v')
+        .to_string();
+
+    let release_url = body["html_url"]
+        .as_str()
+        .unwrap_or("https://github.com/next-mmo/nde-disk-cleaner/releases")
+        .to_string();
+
+    let release_notes = body["body"].as_str().unwrap_or("").to_string();
+
+    let has_update = version_is_newer(&current, &tag);
+
+    Ok(UpdateInfo {
+        current_version: current,
+        latest_version: tag,
+        has_update,
+        release_url,
+        release_notes,
+    })
+}
+
+/// Simple semver comparison: returns true when `latest` is strictly newer than `current`.
+fn version_is_newer(current: &str, latest: &str) -> bool {
+    let parse = |v: &str| -> Vec<u64> {
+        v.split('.')
+            .filter_map(|p| p.parse::<u64>().ok())
+            .collect()
+    };
+    let cur = parse(current);
+    let lat = parse(latest);
+    for i in 0..3 {
+        let c = cur.get(i).copied().unwrap_or(0);
+        let l = lat.get(i).copied().unwrap_or(0);
+        if l > c {
+            return true;
+        }
+        if l < c {
+            return false;
+        }
+    }
+    false
 }

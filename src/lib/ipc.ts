@@ -63,3 +63,19 @@ export function onScanProgress(
 ): Promise<UnlistenFn> {
   return listen<ScanProgress>("scan:progress", (e) => cb(e.payload));
 }
+
+export function permanentDelete(path: string): Promise<void> {
+  return invoke("permanent_delete", { path });
+}
+
+export interface UpdateInfo {
+  current_version: string;
+  latest_version: string;
+  has_update: boolean;
+  release_url: string;
+  release_notes: string;
+}
+
+export function checkForUpdates(): Promise<UpdateInfo> {
+  return invoke("check_for_updates");
+}
