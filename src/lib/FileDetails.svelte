@@ -1,0 +1,107 @@
+<script lang="ts">
+  import type { FileNode } from "./ipc";
+  import { formatBytes, formatCount, formatDate, kindOf } from "./format";
+
+  interface Props {
+    node: FileNode | null;
+    onreveal: (node: FileNode) => void;
+    ontrash: (node: FileNode) => void;
+    onopen: (node: FileNode) => void;
+  }
+  let { node, onreveal, ontrash, onopen }: Props = $props();
+</script>
+
+<div class="bar">
+  {#if !node}
+    <span class="empty">Hover a slice or pick a file</span>
+  {:else}
+    <div class="info">
+      <div class="name" title={node.path}>{node.name}</div>
+      <div class="meta">
+        <span class="pill">{kindOf(node)}</span>
+        <span>{formatBytes(node.size)}</span>
+        {#if node.is_dir}
+          <span>{formatCount(node.file_count)} files</span>
+          <span>{formatCount(node.dir_count)} folders</span>
+        {/if}
+        {#if node.modified}
+          <span>modified {formatDate(node.modified)}</span>
+        {/if}
+      </div>
+      <div class="path" title={node.path}>{node.path}</div>
+    </div>
+    <div class="actions">
+      <button type="button" onclick={() => onopen(node)}>Open</button>
+      <button type="button" onclick={() => onreveal(node)}>Reveal</button>
+      <button type="button" class="danger" onclick={() => ontrash(node)}>
+        Move to Trash
+      </button>
+    </div>
+  {/if}
+</div>
+
+<style>
+  .bar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 10px 16px;
+    border-top: 1px solid var(--border);
+    background: var(--bg-elev);
+    min-height: 64px;
+  }
+  .empty {
+    color: var(--fg-muted);
+    font-size: 12px;
+  }
+  .info {
+    flex: 1;
+    min-width: 0;
+  }
+  .name {
+    font-weight: 600;
+    font-size: 13px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .meta {
+    display: flex;
+    gap: 10px;
+    font-size: 11px;
+    color: var(--fg-dim);
+    margin-top: 3px;
+    align-items: center;
+  }
+  .pill {
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 1px 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--fg-dim);
+  }
+  .path {
+    font-family: ui-monospace, Menlo, monospace;
+    font-size: 10px;
+    color: var(--fg-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin-top: 2px;
+  }
+  .actions {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+  .danger {
+    color: var(--accent-hot);
+  }
+  .danger:hover:not(:disabled) {
+    border-color: var(--accent-hot);
+  }
+</style>

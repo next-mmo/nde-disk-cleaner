@@ -1,0 +1,33 @@
+[package]
+name = "disk-inspector"
+version = "0.1.0"
+description = "Disk Space Analyzer clone — Rust + Tauri 2 + Svelte"
+authors = ["you"]
+edition = "2021"
+
+[lib]
+name = "disk_inspector_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
+tauri-plugin-opener = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+jwalk = "0.8"
+sysinfo = "0.32"
+trash = "5"
+parking_lot = "0.12"
+dashmap = "6"
+rayon = "1.10"
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = 3
+panic = "abort"
+strip = true
