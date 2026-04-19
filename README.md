@@ -1,6 +1,6 @@
 # NDE Disk Cleaner
 
-A cross-platform disk-space analyzer — deep clone of **Disk Space Analyzer: Inspector**
+A cross-platform nde-disk-cleaner
 built on **Rust + Tauri 2 + Svelte 5**. Native on macOS, Windows, and Linux.
 No WSL, no Electron.
 
