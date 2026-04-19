@@ -1,12 +1,12 @@
 [package]
-name = "disk-inspector"
+name = "nde-disk-cleaner"
 version = "0.1.0"
-description = "Disk Space Analyzer clone — Rust + Tauri 2 + Svelte"
+description = "nde-disk-cleaner — Rust + Tauri 2 + Svelte disk space analyzer"
 authors = ["you"]
 edition = "2021"
 
 [lib]
-name = "disk_inspector_lib"
+name = "nde_disk_cleaner_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

@@ -4,11 +4,12 @@
 
   interface Props {
     node: FileNode | null;
+    protectedReason: string | null;
     onreveal: (node: FileNode) => void;
     ontrash: (node: FileNode) => void;
     onopen: (node: FileNode) => void;
   }
-  let { node, onreveal, ontrash, onopen }: Props = $props();
+  let { node, protectedReason, onreveal, ontrash, onopen }: Props = $props();
 </script>
 
 <div class="bar">
@@ -29,11 +30,22 @@
         {/if}
       </div>
       <div class="path" title={node.path}>{node.path}</div>
+      {#if protectedReason}
+        <div class="protected" title={protectedReason}>
+          🔒 Protected — {protectedReason}
+        </div>
+      {/if}
     </div>
     <div class="actions">
       <button type="button" onclick={() => onopen(node)}>Open</button>
       <button type="button" onclick={() => onreveal(node)}>Reveal</button>
-      <button type="button" class="danger" onclick={() => ontrash(node)}>
+      <button
+        type="button"
+        class="danger"
+        disabled={!!protectedReason}
+        title={protectedReason ?? "Move this item to the Trash"}
+        onclick={() => ontrash(node)}
+      >
         Move to Trash
       </button>
     </div>
@@ -103,5 +115,18 @@
   }
   .danger:hover:not(:disabled) {
     border-color: var(--accent-hot);
+  }
+  .danger:disabled {
+    color: var(--fg-muted);
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+  .protected {
+    margin-top: 4px;
+    font-size: 10px;
+    color: var(--accent-hot);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 </style>

@@ -8,6 +8,7 @@
     onScanProgress,
     startScan,
     trashPath,
+    isPathProtected,
     type FileNode,
   } from "./lib/ipc";
   import {
@@ -28,9 +29,29 @@
   let elapsedMs = $state(0);
   let hovering = $state<FileNode | null>(null);
   let activeScanPath = $state<string | null>(null);
+  let protectedReason = $state<string | null>(null);
 
   // Display node = hovered preview, else currently-zoomed node.
   let displayedDetail = $derived(hovering ?? appState.selected ?? appState.zoomed);
+
+  $effect(() => {
+    const path = displayedDetail?.path;
+    if (!path) {
+      protectedReason = null;
+      return;
+    }
+    let cancelled = false;
+    isPathProtected(path)
+      .then((r) => {
+        if (!cancelled) protectedReason = r;
+      })
+      .catch(() => {
+        if (!cancelled) protectedReason = null;
+      });
+    return () => {
+      cancelled = true;
+    };
+  });
 
   onMount(async () => {
     unlistenProgress = await onScanProgress((p) => {
@@ -156,7 +177,7 @@
       <div class="brand">
         <div class="logo">◉</div>
         <div>
-          <div class="title">Disk Inspector</div>
+          <div class="title">NDE Disk Cleaner</div>
           <div class="sub">
             {#if appState.status === "done" && appState.tree}
               Scanned in {scanDuration()} ·
@@ -247,6 +268,7 @@
 
     <FileDetails
       node={displayedDetail}
+      protectedReason={protectedReason}
       onreveal={revealNode}
       onopen={openNode}
       ontrash={trashNode}

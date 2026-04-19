@@ -53,7 +53,6 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y \
             libwebkit2gtk-4.1-dev \
-            libappindicator3-dev \
             librsvg2-dev \
             patchelf \
             libgtk-3-dev \
@@ -90,7 +89,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tagName: ${{ steps.tag.outputs.value }}
-          releaseName: 'Disk Inspector ${{ steps.tag.outputs.value }}'
+          releaseName: 'NDE Disk Cleaner ${{ steps.tag.outputs.value }}'
           releaseBody: 'See the assets to download and install this version.'
           releaseDraft: true
           prerelease: false
