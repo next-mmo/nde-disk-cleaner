@@ -11,7 +11,7 @@
     type FileNode,
   } from "./lib/ipc";
   import {
-    state,
+    state as appState,
     resetScan,
     zoomTo,
     zoomInto,
@@ -30,13 +30,13 @@
   let activeScanPath = $state<string | null>(null);
 
   // Display node = hovered preview, else currently-zoomed node.
-  let displayedDetail = $derived(hovering ?? state.selected ?? state.zoomed);
+  let displayedDetail = $derived(hovering ?? appState.selected ?? appState.zoomed);
 
   onMount(async () => {
     unlistenProgress = await onScanProgress((p) => {
-      state.progress = p;
+      appState.progress = p;
     });
-    state.volumes = await listVolumes();
+    appState.volumes = await listVolumes();
 
     window.addEventListener("keydown", onKeydown);
   });
@@ -49,39 +49,43 @@
 
   function onKeydown(e: KeyboardEvent) {
     if (e.key === "Escape") {
-      if (state.status === "scanning") cancelScan();
-      else if (state.zoomPath.length > 1) zoomTo(state.zoomPath.length - 2);
+      if (appState.status === "scanning") cancelScan();
+      else if (appState.zoomPath.length > 1) zoomTo(appState.zoomPath.length - 2);
     }
-    if (e.key === "Backspace" && state.zoomPath.length > 1) {
+    if (e.key === "Backspace" && appState.zoomPath.length > 1) {
       e.preventDefault();
-      zoomTo(state.zoomPath.length - 2);
+      zoomTo(appState.zoomPath.length - 2);
     }
   }
 
-  async function doScan(path: string) {
-    resetScan();
+  function doSelect(path: string) {
     activeScanPath = path;
-    state.status = "scanning";
-    state.scanStartedAt = Date.now();
+    resetScan();
+  }
+
+  async function doScan(path: string) {
+    doSelect(path);
+    appState.status = "scanning";
+    appState.scanStartedAt = Date.now();
     elapsedMs = 0;
     elapsedTimer = window.setInterval(() => {
-      elapsedMs = Date.now() - state.scanStartedAt;
+      elapsedMs = Date.now() - appState.scanStartedAt;
     }, 200);
 
     try {
-      const tree = await startScan(path, state.showHidden);
-      state.tree = tree;
-      state.zoomPath = [tree];
-      state.selected = tree;
-      state.status = "done";
-      state.scanFinishedAt = Date.now();
+      const tree = await startScan(path, appState.showHidden);
+      appState.tree = tree;
+      appState.zoomPath = [tree];
+      appState.selected = tree;
+      appState.status = "done";
+      appState.scanFinishedAt = Date.now();
     } catch (err: any) {
       const msg = String(err);
       if (msg === "cancelled") {
-        state.status = "cancelled";
+        appState.status = "cancelled";
       } else {
-        state.status = "error";
-        state.error = msg;
+        appState.status = "error";
+        appState.error = msg;
       }
     } finally {
       if (elapsedTimer) {
@@ -93,7 +97,7 @@
 
   async function browseFolder() {
     const picked = await openDialog({ directory: true, multiple: false });
-    if (typeof picked === "string") await doScan(picked);
+    if (typeof picked === "string") doSelect(picked);
   }
 
   async function revealNode(node: FileNode) {
@@ -133,7 +137,7 @@
   }
 
   function scanDuration(): string {
-    const ms = state.scanFinishedAt - state.scanStartedAt;
+    const ms = appState.scanFinishedAt - appState.scanStartedAt;
     if (ms < 1000) return `${ms}ms`;
     return `${(ms / 1000).toFixed(1)}s`;
   }
@@ -141,9 +145,9 @@
 
 <div class="app">
   <Sidebar
-    volumes={state.volumes}
+    volumes={appState.volumes}
     activePath={activeScanPath}
-    onscan={doScan}
+    onselect={doSelect}
     onbrowse={browseFolder}
   />
 
@@ -154,15 +158,15 @@
         <div>
           <div class="title">Disk Inspector</div>
           <div class="sub">
-            {#if state.status === "done" && state.tree}
+            {#if appState.status === "done" && appState.tree}
               Scanned in {scanDuration()} ·
-              {state.tree.file_count.toLocaleString()} files ·
-              {state.tree.dir_count.toLocaleString()} folders
-            {:else if state.status === "idle"}
+              {appState.tree.file_count.toLocaleString()} files ·
+              {appState.tree.dir_count.toLocaleString()} folders
+            {:else if appState.status === "idle"}
               Pick a volume or folder to begin
-            {:else if state.status === "error"}
-              <span class="err">Error: {state.error}</span>
-            {:else if state.status === "cancelled"}
+            {:else if appState.status === "error"}
+              <span class="err">Error: {appState.error}</span>
+            {:else if appState.status === "cancelled"}
               Cancelled
             {/if}
           </div>
@@ -172,53 +176,66 @@
         <label class="toggle">
           <input
             type="checkbox"
-            bind:checked={state.showHidden}
+            bind:checked={appState.showHidden}
           />
           <span>Hidden files</span>
         </label>
-        {#if activeScanPath && state.status !== "scanning"}
+        {#if activeScanPath && appState.status !== "scanning" && appState.status !== "idle"}
           <button onclick={() => doScan(activeScanPath!)}>Rescan</button>
         {/if}
       </div>
     </header>
 
-    {#if state.status === "scanning"}
+    {#if appState.status === "scanning"}
       <ScanProgress
-        progress={state.progress}
+        progress={appState.progress}
         {elapsedMs}
         oncancel={cancelScan}
       />
     {/if}
 
-    {#if state.zoomPath.length > 0}
-      <Breadcrumb path={state.zoomPath} onnavigate={zoomTo} />
+    {#if appState.zoomPath.length > 0}
+      <Breadcrumb path={appState.zoomPath} onnavigate={zoomTo} />
     {/if}
 
     <div class="body">
-      {#if state.zoomed}
+      {#if appState.zoomed}
         <div class="chart">
           <Sunburst
-            root={state.zoomed}
+            root={appState.zoomed}
             onhover={(n) => (hovering = n)}
-            onselect={(n) => (state.selected = n)}
+            onselect={(n) => (appState.selected = n)}
           />
         </div>
         <FileList
-          node={state.zoomed}
-          selected={state.selected}
-          onselect={(n) => (state.selected = n)}
+          node={appState.zoomed}
+          selected={appState.selected}
+          onselect={(n) => (appState.selected = n)}
           onopen={openNode}
         />
-      {:else if state.status === "idle"}
+      {:else if appState.status === "idle"}
         <div class="placeholder">
           <div class="placeholder-icon">◉</div>
-          <div class="placeholder-title">No scan yet</div>
-          <div class="placeholder-sub">
-            Select a volume on the left, or
-            <button class="inline" onclick={browseFolder}>
-              pick a folder
-            </button>
-            .
+          <div class="placeholder-title">
+            {#if activeScanPath}
+              Ready to scan
+            {:else}
+              No scan yet
+            {/if}
+          </div>
+          <div class="placeholder-sub" style="margin-top: 10px;">
+            {#if activeScanPath}
+              <button class="primary" onclick={() => doScan(activeScanPath!)} style="padding: 10px 24px; font-size: 14px;">
+                Start Scan
+              </button>
+              <div style="margin-top: 12px; font-family: monospace; font-size: 11px;">{activeScanPath}</div>
+            {:else}
+              Select a volume on the left, or
+              <button class="inline" onclick={browseFolder}>
+                pick a folder
+              </button>
+              .
+            {/if}
           </div>
           <div class="hint">
             <kbd>Esc</kbd> cancel/back · <kbd>⌫</kbd> navigate up · double-click

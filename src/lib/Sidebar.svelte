@@ -5,11 +5,11 @@
   interface Props {
     volumes: Volume[];
     activePath: string | null;
-    onscan: (path: string) => void;
+    onselect: (path: string) => void;
     onbrowse: () => void;
   }
 
-  let { volumes, activePath, onscan, onbrowse }: Props = $props();
+  let { volumes, activePath, onselect, onbrowse }: Props = $props();
 
   function usagePercent(v: Volume): number {
     if (v.total_bytes === 0) return 0;
@@ -27,7 +27,7 @@
       type="button"
       class="vol"
       class:active={activePath === vol.mount_point}
-      onclick={() => onscan(vol.mount_point)}
+      onclick={() => onselect(vol.mount_point)}
     >
       <div class="vol-top">
         <span class="name">
