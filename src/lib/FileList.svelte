@@ -20,6 +20,21 @@
   function pct(n: FileNode): number {
     return (n.size / maxSize) * 100;
   }
+
+  function glyphFor(kind: string): string {
+    const map: Record<string, string> = {
+      folder: "📁",
+      image: "🖼",
+      video: "🎬",
+      audio: "🎵",
+      archive: "🗜",
+      code: "〈〉",
+      document: "📄",
+      app: "⚙",
+      other: "·",
+    };
+    return map[kind] ?? "·";
+  }
 </script>
 
 <div class="list scroll">
@@ -29,56 +44,86 @@
     <div class="empty">Empty folder</div>
   {:else}
     <div class="head">
-      <span>Name</span>
-      <span class="size">Size</span>
+      <span class="col-name">Name</span>
+      <span class="col-size">Size</span>
     </div>
-    {#each items as item (item.path)}
-      <button
-        type="button"
-        class="row"
-        class:active={selected?.path === item.path}
-        onclick={() => onselect(item)}
-        ondblclick={() => onopen(item)}
-      >
-        <span
-          class="swatch"
-          style:background={kindColor(kindOf(item))}
-        ></span>
-        <span class="icon">{item.is_dir ? "▸" : " "}</span>
-        <span class="name" title={item.path}>{item.name}</span>
-        <span class="size">{formatBytes(item.size)}</span>
-        <div class="bar" style:width="{pct(item)}%"></div>
-        {#if item.is_dir}
-          <span class="sub">
-            {formatCount(item.file_count)} files
+    <div class="rows">
+      {#each items as item (item.path)}
+        {@const kind = kindOf(item)}
+        <button
+          type="button"
+          class="row"
+          class:active={selected?.path === item.path}
+          onclick={() => onselect(item)}
+          ondblclick={() => onopen(item)}
+        >
+          <span
+            class="kind-glyph"
+            style:color={kindColor(kind)}
+          >
+            {#if item.is_dir}
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">
+                <path d="M3 7.5A2.5 2.5 0 0 1 5.5 5h3.4l1.7 1.8h7.9A2.5 2.5 0 0 1 21 9.3v7.2A2.5 2.5 0 0 1 18.5 19h-13A2.5 2.5 0 0 1 3 16.5v-9z" opacity="0.85"/>
+              </svg>
+            {:else}
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round">
+                <path d="M6 3h8l4 4v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/>
+                <path d="M14 3v4h4"/>
+              </svg>
+            {/if}
           </span>
-        {/if}
-      </button>
-    {/each}
+          <span class="name" title={item.path}>{item.name}</span>
+          <span class="size">{formatBytes(item.size)}</span>
+          {#if item.is_dir}
+            <span class="sub">
+              {formatCount(item.file_count)} files · {formatCount(item.dir_count)} folders
+            </span>
+          {:else}
+            <span class="sub">{kind}</span>
+          {/if}
+          <div class="bar" style:width="{pct(item)}%"></div>
+        </button>
+      {/each}
+    </div>
   {/if}
 </div>
 
 <style>
   .list {
     width: 340px;
-    border-left: 1px solid var(--border);
-    background: var(--bg-elev);
+    border-left: 1px solid var(--border-soft);
+    background: var(--glass-sidebar);
+    -webkit-backdrop-filter: blur(40px) saturate(180%);
+    backdrop-filter: blur(40px) saturate(180%);
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
+    min-height: 0;
   }
   .head {
     display: flex;
     justify-content: space-between;
-    padding: 8px 14px;
+    padding: 9px 14px;
     font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.1em;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
     color: var(--fg-muted);
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid var(--border-soft);
+    background: var(--glass-toolbar);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    backdrop-filter: blur(20px) saturate(180%);
     position: sticky;
     top: 0;
-    background: var(--bg-elev);
+    z-index: 1;
+  }
+  .col-name { flex: 1; }
+  .col-size { width: 80px; text-align: right; }
+
+  .rows {
+    display: flex;
+    flex-direction: column;
+    padding: 4px 0;
   }
   .empty {
     padding: 40px 20px;
@@ -89,60 +134,76 @@
   .row {
     position: relative;
     display: grid;
-    grid-template-columns: 4px 14px 1fr auto;
+    grid-template-columns: 22px 1fr auto;
     grid-template-rows: auto auto;
     align-items: center;
-    gap: 4px 8px;
-    padding: 8px 14px;
+    column-gap: 10px;
+    row-gap: 1px;
+    padding: 7px 14px;
     background: transparent;
     border: none;
     border-radius: 0;
-    border-bottom: 1px solid rgba(38, 42, 56, 0.5);
     text-align: left;
     cursor: pointer;
+    box-shadow: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    transition: background 80ms ease;
   }
   .row:hover {
-    background: var(--bg-panel);
+    background: var(--glass-hover);
+    box-shadow: none;
   }
   .row.active {
-    background: rgba(122, 162, 255, 0.12);
+    background: var(--accent-soft);
+    box-shadow: none;
   }
-  .swatch {
+  .row.active .name {
+    color: var(--fg);
+  }
+  .kind-glyph {
     grid-row: 1 / span 2;
-    width: 4px;
-    height: 24px;
-    border-radius: 2px;
-  }
-  .icon {
-    grid-row: 1;
-    color: var(--fg-muted);
-    font-size: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 5px;
   }
   .name {
     grid-row: 1;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    font-size: 13px;
+    font-weight: 500;
   }
   .size {
     grid-row: 1;
     font-variant-numeric: tabular-nums;
-    font-weight: 600;
+    font-weight: 500;
     color: var(--fg-dim);
+    font-size: 12px;
+    text-align: right;
+    width: 80px;
   }
   .sub {
     grid-row: 2;
-    grid-column: 3 / span 2;
+    grid-column: 2 / span 2;
     font-size: 10px;
     color: var(--fg-muted);
+    text-transform: capitalize;
+    letter-spacing: 0.02em;
   }
   .bar {
     position: absolute;
-    bottom: 0;
-    left: 0;
-    height: 2px;
-    background: var(--accent);
-    opacity: 0.4;
-    transition: width 160ms;
+    bottom: 1px;
+    left: 14px;
+    right: 14px;
+    height: 1.5px;
+    background: linear-gradient(90deg, #5ac8fa, #0a84ff, #bf5af2);
+    opacity: 0.55;
+    transition: width 160ms ease;
+    border-radius: 999px;
   }
 </style>

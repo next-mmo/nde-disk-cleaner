@@ -31,6 +31,40 @@ export interface Volume {
 }
 
 export function listVolumes(): Promise<Volume[]> {
+  // Browser-preview fallback: return sample disks so the UI is inspectable
+  // without launching the full Tauri runtime.
+  if (typeof window === "undefined" || !("__TAURI_INTERNALS__" in window)) {
+    const TB = 1024 ** 4;
+    return Promise.resolve([
+      {
+        name: "Macintosh HD",
+        mount_point: "/",
+        total_bytes: 2 * TB,
+        available_bytes: 812 * TB / 1024,
+        used_bytes: 2 * TB - 812 * TB / 1024,
+        file_system: "apfs",
+        is_removable: false,
+      },
+      {
+        name: "Data",
+        mount_point: "/System/Volumes/Data",
+        total_bytes: 2 * TB,
+        available_bytes: 812 * TB / 1024,
+        used_bytes: 2 * TB - 812 * TB / 1024,
+        file_system: "apfs",
+        is_removable: false,
+      },
+      {
+        name: "NDE USB",
+        mount_point: "/Volumes/NDE USB",
+        total_bytes: 64 * 1024 ** 3,
+        available_bytes: 21 * 1024 ** 3,
+        used_bytes: 43 * 1024 ** 3,
+        file_system: "exfat",
+        is_removable: true,
+      },
+    ]);
+  }
   return invoke("list_volumes");
 }
 
@@ -61,6 +95,9 @@ export function homeDir(): Promise<string | null> {
 export function onScanProgress(
   cb: (p: ScanProgress) => void,
 ): Promise<UnlistenFn> {
+  if (typeof window === "undefined" || !("__TAURI_INTERNALS__" in window)) {
+    return Promise.resolve(() => {});
+  }
   return listen<ScanProgress>("scan:progress", (e) => cb(e.payload));
 }
 

@@ -60,14 +60,26 @@
   <div class="overlay" onclick={handleOverlayClick}>
     <div class="panel">
       <header class="panel-header">
-        <h2>Settings</h2>
-        <button class="close-btn" onclick={onclose} aria-label="Close settings">✕</button>
+        <div class="header-titles">
+          <h2>Settings</h2>
+          <p class="sub">NDE Disk Cleaner</p>
+        </div>
+        <button class="close-btn ghost" onclick={onclose} aria-label="Close settings">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+            <path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+          </svg>
+        </button>
       </header>
 
       <div class="sections scroll">
         <!-- ── Deletion ─────────────────────────── -->
         <section class="section">
-          <div class="section-icon">🗑️</div>
+          <div class="section-icon icon-trash">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+              <path d="M5 6l1 14a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-14"/>
+            </svg>
+          </div>
           <div class="section-body">
             <h3>Deletion Mode</h3>
             <p class="desc">
@@ -76,18 +88,21 @@
             </p>
             <label class="switch-row">
               <span class="switch-label">Allow permanent deletion</span>
-              <span class="switch">
+              <span class="switch-tahoe">
                 <input
                   type="checkbox"
                   checked={allowPermanentDelete}
                   onchange={handleToggle}
                 />
-                <span class="slider"></span>
+                <span class="track"><span class="thumb"></span></span>
               </span>
             </label>
             {#if allowPermanentDelete}
               <div class="warning-banner">
-                <span class="warning-icon">⚠️</span>
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M12 9v4M12 17h.01"/>
+                  <path d="M10.3 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                </svg>
                 <span>Permanent deletion is <strong>active</strong>. Deleted files cannot be recovered.</span>
               </div>
             {/if}
@@ -96,7 +111,12 @@
 
         <!-- ── Updates ─────────────────────────── -->
         <section class="section">
-          <div class="section-icon">🔄</div>
+          <div class="section-icon icon-update">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12a9 9 0 0 1-15.5 6.36M3 12a9 9 0 0 1 15.5-6.36"/>
+              <path d="M21 4v5h-5M3 20v-5h5"/>
+            </svg>
+          </div>
           <div class="section-body">
             <h3>Updates</h3>
             <p class="desc">
@@ -154,7 +174,7 @@
       </div>
 
       <footer class="panel-footer">
-        <span class="footer-text">NDE Disk Cleaner</span>
+        <span class="footer-text">NDE Disk Cleaner · v0.1.3</span>
       </footer>
     </div>
   </div>
@@ -165,92 +185,117 @@
     position: fixed;
     inset: 0;
     z-index: 999;
-    background: rgba(0, 0, 0, 0.55);
-    backdrop-filter: blur(6px);
+    background: rgba(0, 0, 0, 0.45);
+    -webkit-backdrop-filter: blur(20px) saturate(150%);
+    backdrop-filter: blur(20px) saturate(150%);
     display: flex;
     justify-content: flex-end;
-    animation: fadeIn 150ms ease;
+    animation: fadeIn 180ms ease;
   }
   @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
   }
   @keyframes slideIn {
-    from { transform: translateX(100%); }
-    to { transform: translateX(0); }
+    from { transform: translateX(100%) scale(0.98); opacity: 0; }
+    to   { transform: translateX(0) scale(1);       opacity: 1; }
   }
 
   .panel {
     width: 420px;
-    max-width: 90vw;
+    max-width: 92vw;
     height: 100%;
-    background: var(--bg-elev);
-    border-left: 1px solid var(--border);
+    background: var(--glass-sidebar);
+    -webkit-backdrop-filter: blur(50px) saturate(200%);
+    backdrop-filter: blur(50px) saturate(200%);
+    border-left: 1px solid var(--border-soft);
     display: flex;
     flex-direction: column;
-    animation: slideIn 200ms cubic-bezier(0.22, 1, 0.36, 1);
-    box-shadow: -12px 0 40px rgba(0, 0, 0, 0.4);
+    animation: slideIn 280ms cubic-bezier(0.22, 1, 0.36, 1);
+    box-shadow:
+      -24px 0 60px rgba(0, 0, 0, 0.5),
+      -1px 0 0 rgba(255, 255, 255, 0.04) inset;
   }
 
   .panel-header {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
-    padding: 18px 20px 14px;
-    border-bottom: 1px solid var(--border);
+    padding: 22px 22px 18px;
+    border-bottom: 1px solid var(--border-soft);
   }
-  .panel-header h2 {
+  .header-titles h2 {
     margin: 0;
-    font-size: 16px;
+    font-size: 22px;
     font-weight: 700;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.02em;
+    color: var(--fg);
+  }
+  .sub {
+    margin: 4px 0 0;
+    font-size: 12px;
+    color: var(--fg-muted);
   }
   .close-btn {
-    border: none;
-    background: transparent;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border-radius: 8px;
     color: var(--fg-dim);
-    font-size: 16px;
-    cursor: pointer;
-    padding: 4px 8px;
-    border-radius: 6px;
-    transition: background 80ms, color 80ms;
-  }
-  .close-btn:hover {
-    background: var(--bg-panel);
-    color: var(--fg);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .sections {
     flex: 1;
     overflow-y: auto;
-    padding: 16px 20px;
+    padding: 18px 22px;
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 14px;
   }
 
   .section {
     display: flex;
     gap: 14px;
     padding: 16px;
-    background: var(--bg-panel);
-    border: 1px solid var(--border);
-    border-radius: 10px;
+    background: var(--glass-card);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid var(--border-soft);
+    border-radius: 12px;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset;
   }
   .section-icon {
-    font-size: 22px;
+    width: 36px;
+    height: 36px;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     flex-shrink: 0;
-    margin-top: 2px;
+  }
+  .icon-trash {
+    background: linear-gradient(180deg, rgba(255, 69, 58, 0.25), rgba(255, 69, 58, 0.12));
+    color: var(--accent-hot);
+    border: 1px solid rgba(255, 69, 58, 0.3);
+  }
+  .icon-update {
+    background: linear-gradient(180deg, rgba(10, 132, 255, 0.25), rgba(10, 132, 255, 0.12));
+    color: var(--accent);
+    border: 1px solid rgba(10, 132, 255, 0.3);
   }
   .section-body {
     flex: 1;
     min-width: 0;
   }
   .section-body h3 {
-    margin: 0 0 6px;
+    margin: 0 0 4px;
     font-size: 14px;
     font-weight: 600;
     color: var(--fg);
+    letter-spacing: -0.01em;
   }
   .desc {
     margin: 0 0 12px;
@@ -259,7 +304,7 @@
     line-height: 1.5;
   }
 
-  /* Toggle switch */
+  /* Toggle switch (Tahoe) */
   .switch-row {
     display: flex;
     align-items: center;
@@ -272,45 +317,44 @@
     font-weight: 500;
     color: var(--fg);
   }
-  .switch {
+  .switch-tahoe {
     position: relative;
-    width: 42px;
-    height: 24px;
+    display: inline-block;
+    width: 38px;
+    height: 22px;
     flex-shrink: 0;
   }
-  .switch input {
+  .switch-tahoe input {
     opacity: 0;
     width: 0;
     height: 0;
     position: absolute;
   }
-  .slider {
+  .switch-tahoe .track {
     position: absolute;
-    cursor: pointer;
     inset: 0;
-    background: #2a2e3e;
-    border: 1px solid var(--border);
+    background: rgba(120, 120, 128, 0.36);
     border-radius: 999px;
-    transition: background 200ms, border-color 200ms;
+    transition: background 200ms ease;
   }
-  .slider::before {
-    content: "";
+  .switch-tahoe .thumb {
     position: absolute;
-    height: 18px;
-    width: 18px;
+    top: 2px;
     left: 2px;
-    bottom: 2px;
-    background: var(--fg-dim);
+    width: 18px;
+    height: 18px;
     border-radius: 50%;
-    transition: transform 200ms, background 200ms;
-  }
-  .switch input:checked + .slider {
-    background: var(--accent-hot);
-    border-color: var(--accent-hot);
-  }
-  .switch input:checked + .slider::before {
     background: #fff;
-    transform: translateX(18px);
+    box-shadow:
+      0 2px 4px rgba(0, 0, 0, 0.3),
+      0 1px 1px rgba(0, 0, 0, 0.2);
+    transition: transform 220ms cubic-bezier(0.4, 0, 0.2, 1), background 200ms;
+  }
+  .switch-tahoe input:checked + .track {
+    background: var(--accent-ok);
+  }
+  .switch-tahoe input:checked + .track .thumb {
+    transform: translateX(16px);
   }
 
   .warning-banner {
@@ -319,15 +363,12 @@
     align-items: center;
     gap: 8px;
     padding: 8px 12px;
-    border-radius: 6px;
-    background: rgba(255, 122, 122, 0.1);
-    border: 1px solid rgba(255, 122, 122, 0.25);
+    border-radius: 8px;
+    background: rgba(255, 69, 58, 0.12);
+    border: 1px solid rgba(255, 69, 58, 0.3);
     font-size: 11px;
     color: var(--accent-hot);
     animation: fadeIn 200ms ease;
-  }
-  .warning-icon {
-    font-size: 14px;
   }
 
   /* Update */
@@ -335,18 +376,9 @@
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    padding: 8px 16px;
+    padding: 7px 14px;
     font-weight: 600;
     font-size: 12px;
-    border-radius: 8px;
-    background: var(--bg-elev);
-    border: 1px solid var(--border);
-    color: var(--fg);
-    transition: background 80ms, border-color 80ms;
-  }
-  .update-btn:hover:not(:disabled) {
-    background: var(--bg);
-    border-color: #3a4055;
   }
   .update-btn:disabled {
     opacity: 0.6;
@@ -355,9 +387,9 @@
 
   .spinner {
     display: inline-block;
-    width: 14px;
-    height: 14px;
-    border: 2px solid var(--fg-muted);
+    width: 13px;
+    height: 13px;
+    border: 2px solid rgba(255, 255, 255, 0.18);
     border-top-color: var(--accent);
     border-radius: 50%;
     animation: spin 600ms linear infinite;
@@ -369,16 +401,17 @@
   .update-result {
     margin-top: 12px;
     padding: 12px 14px;
-    border-radius: 8px;
-    background: var(--bg-elev);
-    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--glass-panel);
+    border: 1px solid var(--border-soft);
     display: flex;
     flex-direction: column;
     gap: 6px;
     animation: fadeIn 200ms ease;
   }
   .update-result.has-update {
-    border-color: rgba(107, 212, 154, 0.3);
+    border-color: rgba(48, 209, 88, 0.4);
+    box-shadow: 0 0 0 1px rgba(48, 209, 88, 0.15) inset;
   }
   .version-row {
     display: flex;
@@ -390,7 +423,7 @@
     font-weight: 500;
   }
   .ver-value {
-    font-family: ui-monospace, Menlo, monospace;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
     color: var(--fg);
     font-weight: 600;
   }
@@ -404,13 +437,13 @@
   .update-badge {
     font-size: 12px;
     font-weight: 600;
-    color: var(--ok);
+    color: var(--accent-ok);
   }
   .up-to-date {
     margin-top: 6px;
     font-size: 12px;
     font-weight: 600;
-    color: var(--ok);
+    color: var(--accent-ok);
   }
 
   .release-notes {
@@ -421,33 +454,36 @@
     cursor: pointer;
     color: var(--fg-dim);
     font-weight: 600;
+    padding: 4px 0;
   }
   .release-notes pre {
     margin-top: 6px;
     padding: 10px;
-    background: var(--bg);
-    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid var(--border-soft);
+    border-radius: 8px;
     font-size: 11px;
     white-space: pre-wrap;
     word-break: break-word;
     color: var(--fg-dim);
     max-height: 200px;
     overflow-y: auto;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
   }
 
   .update-error {
     margin-top: 10px;
     padding: 8px 12px;
-    border-radius: 6px;
-    background: rgba(255, 122, 122, 0.08);
-    border: 1px solid rgba(255, 122, 122, 0.2);
+    border-radius: 8px;
+    background: rgba(255, 69, 58, 0.10);
+    border: 1px solid rgba(255, 69, 58, 0.25);
     font-size: 12px;
     color: var(--accent-hot);
   }
 
   .panel-footer {
-    padding: 12px 20px;
-    border-top: 1px solid var(--border);
+    padding: 12px 22px;
+    border-top: 1px solid var(--border-soft);
     display: flex;
     align-items: center;
     justify-content: center;

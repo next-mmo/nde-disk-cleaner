@@ -21,10 +21,13 @@
 </script>
 
 <div class="progress">
-  <div class="pulse">
-    <div class="dot"></div>
-    <div class="dot"></div>
-    <div class="dot"></div>
+  <div class="badge">
+    <div class="pulse">
+      <div class="dot"></div>
+      <div class="dot"></div>
+      <div class="dot"></div>
+    </div>
+    <span class="badge-label">Scanning</span>
   </div>
   <div class="stats">
     <div class="row">
@@ -49,13 +52,29 @@
     display: flex;
     align-items: center;
     gap: 14px;
-    padding: 10px 16px;
-    border-bottom: 1px solid var(--border);
-    background: linear-gradient(
-      90deg,
-      rgba(122, 162, 255, 0.08),
-      transparent 40%
-    );
+    padding: 9px 16px;
+    border-bottom: 1px solid var(--border-soft);
+    background: var(--glass-toolbar);
+    -webkit-backdrop-filter: blur(30px) saturate(180%);
+    backdrop-filter: blur(30px) saturate(180%);
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 10px 4px 8px;
+    background: var(--accent-soft);
+    border: 1px solid rgba(10, 132, 255, 0.35);
+    border-radius: 999px;
+    color: var(--accent);
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.01em;
+  }
+  .badge-label {
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-size: 10px;
   }
   .pulse {
     display: flex;
@@ -66,6 +85,7 @@
     height: 6px;
     border-radius: 50%;
     background: var(--accent);
+    box-shadow: 0 0 6px var(--accent-glow);
     animation: bounce 900ms infinite ease-in-out;
   }
   .dot:nth-child(2) {
@@ -91,6 +111,10 @@
   .k {
     color: var(--fg-muted);
     margin-left: 10px;
+    text-transform: uppercase;
+    font-size: 10px;
+    letter-spacing: 0.05em;
+    font-weight: 500;
   }
   .k:first-child {
     margin-left: 0;
@@ -99,9 +123,10 @@
     color: var(--fg);
     font-weight: 600;
     font-variant-numeric: tabular-nums;
+    font-size: 12px;
   }
   .current {
-    font-family: ui-monospace, Menlo, monospace;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
     font-size: 11px;
     color: var(--fg-muted);
     white-space: nowrap;

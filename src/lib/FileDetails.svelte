@@ -33,13 +33,17 @@
       <div class="path" title={node.path}>{node.path}</div>
       {#if protectedReason}
         <div class="protected" title={protectedReason}>
-          🔒 Protected — {protectedReason}
+          <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <rect x="5" y="11" width="14" height="9" rx="2"/>
+            <path d="M8 11V7a4 4 0 0 1 8 0v4"/>
+          </svg>
+          Protected — {protectedReason}
         </div>
       {/if}
     </div>
     <div class="actions">
-      <button type="button" onclick={() => onopen(node)}>Open</button>
-      <button type="button" onclick={() => onreveal(node)}>Reveal</button>
+      <button type="button" class="ghost" onclick={() => onopen(node)}>Open</button>
+      <button type="button" class="ghost" onclick={() => onreveal(node)}>Reveal</button>
       <button
         type="button"
         class="danger"
@@ -60,8 +64,10 @@
     align-items: center;
     gap: 16px;
     padding: 10px 16px;
-    border-top: 1px solid var(--border);
-    background: var(--bg-elev);
+    border-top: 1px solid var(--border-soft);
+    background: var(--glass-toolbar);
+    -webkit-backdrop-filter: blur(30px) saturate(180%);
+    backdrop-filter: blur(30px) saturate(180%);
     min-height: 64px;
   }
   .empty {
@@ -78,6 +84,7 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    letter-spacing: -0.005em;
   }
   .meta {
     display: flex;
@@ -86,20 +93,21 @@
     color: var(--fg-dim);
     margin-top: 3px;
     align-items: center;
+    flex-wrap: wrap;
   }
   .pill {
-    background: var(--bg-panel);
-    border: 1px solid var(--border);
-    border-radius: 3px;
-    padding: 1px 6px;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    font-size: 9px;
-    font-weight: 700;
+    background: var(--glass-card);
+    border: 1px solid var(--border-soft);
+    border-radius: 999px;
+    padding: 1px 8px;
+    text-transform: capitalize;
+    letter-spacing: 0.01em;
+    font-size: 10px;
+    font-weight: 500;
     color: var(--fg-dim);
   }
   .path {
-    font-family: ui-monospace, Menlo, monospace;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
     font-size: 10px;
     color: var(--fg-muted);
     overflow: hidden;
@@ -114,28 +122,30 @@
   }
   .danger {
     color: var(--accent-hot);
+    border-color: rgba(255, 69, 58, 0.35);
   }
   .danger:hover:not(:disabled) {
+    background: rgba(255, 69, 58, 0.15);
     border-color: var(--accent-hot);
   }
   .danger:disabled {
     color: var(--fg-muted);
     cursor: not-allowed;
-    opacity: 0.55;
+    opacity: 0.5;
   }
   .danger.permanent {
-    background: rgba(255, 80, 80, 0.15);
-    border-color: rgba(255, 80, 80, 0.4);
+    background: linear-gradient(180deg, rgba(255, 69, 58, 0.22), rgba(255, 69, 58, 0.12));
+    border-color: rgba(255, 69, 58, 0.55);
     font-weight: 600;
-    animation: pulse-danger 1.5s ease-in-out infinite;
+    animation: pulse-danger 1.6s ease-in-out infinite;
   }
   .danger.permanent:hover:not(:disabled) {
-    background: rgba(255, 80, 80, 0.25);
+    background: linear-gradient(180deg, rgba(255, 69, 58, 0.32), rgba(255, 69, 58, 0.18));
     border-color: var(--accent-hot);
   }
   @keyframes pulse-danger {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(255, 80, 80, 0); }
-    50% { box-shadow: 0 0 8px 2px rgba(255, 80, 80, 0.15); }
+    0%, 100% { box-shadow: 0 0 0 0 rgba(255, 69, 58, 0); }
+    50% { box-shadow: 0 0 10px 1px rgba(255, 69, 58, 0.35); }
   }
   .protected {
     margin-top: 4px;
@@ -144,5 +154,8 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
   }
 </style>

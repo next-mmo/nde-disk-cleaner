@@ -12,7 +12,7 @@
 <nav class="crumbs" aria-label="Folder path">
   {#each path as node, i (node.path)}
     {#if i > 0}
-      <span class="sep">›</span>
+      <span class="sep" aria-hidden="true">›</span>
     {/if}
     <button
       type="button"
@@ -32,28 +32,37 @@
     align-items: center;
     gap: 4px;
     flex-wrap: wrap;
-    padding: 10px 16px;
-    border-bottom: 1px solid var(--border);
-    background: var(--bg-elev);
-    min-height: 42px;
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--border-soft);
+    background: var(--glass-toolbar);
+    -webkit-backdrop-filter: blur(30px) saturate(180%);
+    backdrop-filter: blur(30px) saturate(180%);
+    min-height: 38px;
   }
   .crumb {
     display: inline-flex;
     align-items: baseline;
     gap: 6px;
     background: transparent;
-    border: none;
-    padding: 4px 8px;
-    border-radius: 5px;
+    border: 1px solid transparent;
+    padding: 3px 8px;
+    border-radius: 6px;
     color: var(--fg-dim);
+    box-shadow: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    transition: background 100ms ease, color 100ms ease, border-color 100ms ease;
+    font-size: 12px;
   }
   .crumb:hover {
-    background: var(--bg-panel);
+    background: var(--glass-hover);
     color: var(--fg);
+    border-color: var(--border-soft);
+    box-shadow: none;
   }
   .crumb.last {
     color: var(--fg);
-    font-weight: 600;
+    font-weight: 500;
   }
   .name {
     font-size: 13px;
@@ -65,6 +74,7 @@
   }
   .sep {
     color: var(--fg-muted);
-    font-size: 14px;
+    font-size: 13px;
+    opacity: 0.5;
   }
 </style>

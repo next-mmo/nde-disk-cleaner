@@ -35,17 +35,17 @@ export function colorFor(s: string, depth = 0): string {
   return `hsl(${hue} ${sat}% ${lum}%)`;
 }
 
-/** Color by file-kind bucket, not by raw extension. */
+/** Color by file-kind bucket — macOS Tahoe palette. */
 const KIND_COLORS: Record<string, string> = {
-  image: "hsl(200 70% 58%)",
-  video: "hsl(340 65% 60%)",
-  audio: "hsl(280 55% 62%)",
-  archive: "hsl(30 70% 58%)",
-  code: "hsl(140 55% 55%)",
-  document: "hsl(50 75% 60%)",
-  app: "hsl(10 70% 60%)",
-  folder: "hsl(220 45% 55%)",
-  other: "hsl(220 15% 55%)",
+  image:    "hsl(200 95% 65%)",  /* system blue   */
+  video:    "hsl(330 90% 65%)",  /* system pink   */
+  audio:    "hsl(275 85% 70%)",  /* system purple */
+  archive:  "hsl(28 95% 60%)",   /* system orange */
+  code:     "hsl(140 70% 60%)",  /* system green  */
+  document: "hsl(48 95% 62%)",   /* system yellow */
+  app:      "hsl(0 90% 65%)",    /* system red    */
+  folder:   "hsl(215 90% 68%)",  /* system blue (lighter) */
+  other:    "hsl(220 12% 60%)",  /* graphite      */
 };
 
 const EXT_KIND: Record<string, string> = {

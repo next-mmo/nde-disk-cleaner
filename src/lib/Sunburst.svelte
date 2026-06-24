@@ -183,25 +183,21 @@
     aria-label="Disk usage sunburst"
   >
     <defs>
-      <filter id="slice-shadow" x="-10%" y="-10%" width="120%" height="120%">
-        <feGaussianBlur in="SourceAlpha" stdDeviation="1.5" />
-        <feOffset dx="0" dy="1" result="off" />
-        <feComponentTransfer>
-          <feFuncA type="linear" slope="0.4" />
-        </feComponentTransfer>
-        <feMerge>
-          <feMergeNode />
-          <feMergeNode in="SourceGraphic" />
-        </feMerge>
-      </filter>
+      <radialGradient id="center-glow" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="rgba(10, 132, 255, 0.18)"/>
+        <stop offset="100%" stop-color="rgba(10, 132, 255, 0)"/>
+      </radialGradient>
     </defs>
+
+    <!-- Center halo -->
+    <circle cx={center} cy={center} r={ringWidth * 0.95} fill="url(#center-glow)" pointer-events="none"/>
 
     {#each arcs as arc (arc.node.path + ":" + arc.depth)}
       <path
         d={arc.path}
         fill={arc.color}
-        stroke="var(--bg)"
-        stroke-width="1.5"
+        stroke="rgba(0, 0, 0, 0.35)"
+        stroke-width="1.2"
         class="slice"
         class:hot={hovered === arc}
         class:root={arc.depth === 0}
@@ -261,63 +257,83 @@
   svg {
     max-width: 100%;
     max-height: 100%;
+    filter: drop-shadow(0 12px 28px rgba(0, 0, 0, 0.35));
   }
   .slice {
     cursor: pointer;
-    transition: opacity 80ms, filter 80ms;
+    transition: opacity 100ms ease, filter 120ms ease, transform 120ms ease;
+    transform-origin: center;
+    transform-box: fill-box;
   }
   .slice.root {
     cursor: default;
+    fill: rgba(255, 255, 255, 0.04);
+    stroke: rgba(255, 255, 255, 0.08);
   }
   .slice:hover:not(.root) {
-    filter: brightness(1.15);
+    filter: brightness(1.18) saturate(1.15);
   }
   .slice.hot {
-    filter: brightness(1.2);
+    filter: brightness(1.25) saturate(1.2);
+    opacity: 1;
+  }
+  .slice:not(.hot):not(.root) {
+    opacity: 0.92;
   }
   .label {
     font-size: 11px;
-    fill: #0c0f16;
-    font-weight: 600;
+    fill: rgba(255, 255, 255, 0.92);
+    font-weight: 500;
     paint-order: stroke;
-    stroke: rgba(255, 255, 255, 0.5);
-    stroke-width: 0.5px;
+    stroke: rgba(0, 0, 0, 0.55);
+    stroke-width: 2.5px;
+    stroke-linejoin: round;
   }
   .label.center {
     font-size: 15px;
     fill: var(--fg);
     stroke: none;
     font-weight: 600;
+    letter-spacing: -0.01em;
   }
   .label.center .sub {
     font-size: 12px;
     fill: var(--fg-dim);
     font-weight: 500;
+    stroke: none;
   }
   .tip {
     position: absolute;
-    top: 12px;
-    left: 12px;
-    background: rgba(10, 12, 20, 0.92);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 8px 12px;
+    top: 14px;
+    left: 14px;
+    background: rgba(40, 40, 44, 0.55);
+    -webkit-backdrop-filter: blur(30px) saturate(180%);
+    backdrop-filter: blur(30px) saturate(180%);
+    border: 1px solid var(--border-soft);
+    border-radius: 10px;
+    padding: 9px 13px;
     max-width: 340px;
     pointer-events: none;
-    backdrop-filter: blur(8px);
+    box-shadow:
+      0 8px 24px rgba(0, 0, 0, 0.35),
+      0 1px 0 rgba(255, 255, 255, 0.05) inset;
   }
   .tip-name {
     font-weight: 600;
+    color: var(--fg);
+    letter-spacing: -0.005em;
   }
   .tip-size {
     color: var(--accent);
     font-variant-numeric: tabular-nums;
     margin-top: 2px;
+    font-weight: 600;
   }
   .tip-path {
     color: var(--fg-muted);
     font-size: 11px;
     margin-top: 4px;
     word-break: break-all;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
   }
 </style>
